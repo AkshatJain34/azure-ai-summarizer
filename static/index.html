@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Azure AI Document & Lecture Summarizer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-image: linear-gradient(to bottom right, rgba(6, 11, 25, 0.78), rgba(10, 18, 38, 0.88)),
+                        url('https://webusupload.apowersoft.info/lightpdf/wp-content/uploads/2024/01/website-summarizer.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen font-sans selection:bg-sky-500/30">
+
+  <!-- Top Navbar -->
+  <header class="border-b border-slate-800/70 bg-slate-950/60 backdrop-blur-lg sticky top-0 z-20">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 text-lg font-bold">
+          AI
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white">AzureDoc <span class="text-sky-400">Summarizer</span></h1>
+          <p class="text-xs text-slate-400">Document Intelligence • AI Speech • AI Language • Blob Storage</p>
+        </div>
+      </div>
+      <span class="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Azure Cloud Connected
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+    <!-- Left Panel: Upload & Settings -->
+    <section class="lg:col-span-4">
+      <div class="bg-slate-900/65 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-6 shadow-2xl">
+        <h2 class="text-base font-semibold text-white mb-1">Upload Study Material</h2>
+        <p class="text-xs text-slate-400 mb-5">PDF notes, handwritten/printed images, or WAV lecture audio.</p>
+
+        <!-- Drag & Drop Zone -->
+        <label id="dropZone" for="fileInput" class="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-sky-500 hover:bg-sky-500/5 rounded-xl p-8 cursor-pointer transition text-center">
+          <svg class="w-10 h-10 text-sky-400 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
+          </svg>
+          <span class="text-sm font-medium text-slate-200">Click to browse or drag & drop</span>
+          <span class="text-xs text-slate-500 mt-1">PDF, PNG, JPG, WAV</span>
+          <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.wav" class="hidden" onchange="handleFileSelect()" />
+        </label>
+
+        <!-- Selected File Pill -->
+        <div id="fileInfo" class="hidden mt-4 p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between text-xs">
+          <span id="fileName" class="text-sky-300 font-medium truncate max-w-[200px]"></span>
+          <span id="fileSize" class="text-slate-400"></span>
+        </div>
+
+        <!-- Summary Length Selector -->
+        <div class="mt-5">
+          <label class="block text-xs font-medium text-slate-400 mb-2">Summary Detail Level</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="setLength('short')" id="len-short" class="len-btn py-2 text-xs rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-sky-500 transition">Short</button>
+            <button type="button" onclick="setLength('medium')" id="len-medium" class="len-btn py-2 text-xs rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-sky-500 transition">Medium</button>
+            <button type="button" onclick="setLength('detailed')" id="len-detailed" class="len-btn py-2 text-xs rounded-lg border border-sky-500 bg-sky-500/20 text-sky-300 font-semibold transition">Detailed</button>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="uploadBtn" onclick="uploadFile()" class="mt-6 w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-sky-500/20 transition flex items-center justify-center gap-2">
+          <span>Generate AI Summary</span>
+        </button>
+
+        <!-- Error Box -->
+        <div id="errorBox" class="hidden mt-4 p-3 bg-red-950/60 border border-red-700/60 rounded-xl text-xs text-red-300"></div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Output Dashboard -->
+    <section class="lg:col-span-8">
+      <!-- Empty State -->
+      <div id="emptyState" class="min-h-[420px] bg-slate-900/55 backdrop-blur-xl border border-slate-700/50 rounded-2xl flex flex-col items-center justify-center p-10 text-center shadow-2xl">
+        <div class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-4 text-2xl">📄</div>
+        <h2 class="text-lg font-semibold text-slate-200">Ready to Summarize</h2>
+        <p class="text-sm text-slate-400 max-w-md mt-2">Upload any lecture PDF, notes photo, or WAV recording on the left to generate a detailed summary, key bullet highlights, and important topics.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="hidden min-h-[420px] bg-slate-900/65 backdrop-blur-xl border border-slate-700/60 rounded-2xl flex flex-col items-center justify-center p-10 text-center shadow-2xl">
+        <div class="w-12 h-12 border-4 border-sky-500/30 border-t-sky-400 rounded-full animate-spin mb-4"></div>
+        <h3 class="text-base font-semibold text-sky-400">Processing on Microsoft Azure...</h3>
+        <p class="text-xs text-slate-400 mt-1">Extracting full text & generating detailed summary.</p>
+      </div>
+
+      <!-- Results Container -->
+      <div id="resultBox" class="hidden space-y-5">
+        <!-- Stats Bar (3 Columns) -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-slate-900/70 backdrop-blur-xl border border-slate-700/60 rounded-xl p-4 shadow-lg">
+            <p class="text-[11px] text-slate-400 uppercase">Original Words</p>
+            <p id="statOrig" class="text-xl font-bold text-white mt-1">0</p>
+          </div>
+          <div class="bg-slate-900/70 backdrop-blur-xl border border-slate-700/60 rounded-xl p-4 shadow-lg">
+            <p class="text-[11px] text-slate-400 uppercase">Summary Words</p>
+            <p id="statSum" class="text-xl font-bold text-sky-400 mt-1">0</p>
+          </div>
+          <div class="bg-slate-900/70 backdrop-blur-xl border border-slate-700/60 rounded-xl p-4 shadow-lg">
+            <p class="text-[11px] text-slate-400 uppercase">Time Saved</p>
+            <p id="statReduced" class="text-xl font-bold text-emerald-400 mt-1">0%</p>
+          </div>
+        </div>
+
+        <!-- Tabs & Actions -->
+        <div class="bg-slate-900/70 backdrop-blur-xl border border-slate-700/60 rounded-2xl overflow-hidden shadow-2xl">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-slate-800/80 bg-slate-950/40">
+            <div class="flex gap-2">
+              <button onclick="switchTab('summary')" id="tab-summary" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30">AI Summary</button>
+              <button onclick="switchTab('extracted')" id="tab-extracted" class="px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white">Full Extracted Text</button>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="copySummary()" id="copyBtn" class="px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Copy</button>
+              <button onclick="downloadSummary()" class="px-3 py-1.5 text-xs rounded-lg bg-sky-600 hover:bg-sky-500 text-white transition">Download .txt</button>
+            </div>
+          </div>
+
+          <!-- Tab 1: Summary + Highlights + Topics -->
+          <div id="panel-summary" class="p-6 space-y-6">
+            <div>
+              <h3 class="text-sm font-semibold text-sky-400 uppercase tracking-wider mb-3">Detailed Summary</h3>
+              <p id="summaryText" class="text-slate-200 text-[15px] leading-7 whitespace-pre-wrap"></p>
+            </div>
+
+            <div id="highlightsSection" class="pt-5 border-t border-slate-800/80">
+              <h3 class="text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-3">Key Bullet Highlights</h3>
+              <ul id="highlightsList" class="space-y-2.5 text-sm text-slate-300"></ul>
+            </div>
+
+            <div class="pt-5 border-t border-slate-800/80">
+              <h3 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider mb-3">Key Topics & Terms</h3>
+              <div id="keywordsBox" class="flex flex-wrap gap-2"></div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Full Extracted Text -->
+          <div id="panel-extracted" class="hidden p-6">
+            <pre id="extractedText" class="whitespace-pre-wrap font-mono text-xs text-slate-300 leading-6 max-h-[500px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let selectedLength = "detailed";
+    let latestData = null;
+
+    function setLength(len) {
+      selectedLength = len;
+      document.querySelectorAll(".len-btn").forEach(btn => {
+        btn.className = "len-btn py-2 text-xs rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-sky-500 transition";
+      });
+      document.getElementById("len-" + len).className = "len-btn py-2 text-xs rounded-lg border border-sky-500 bg-sky-500/20 text-sky-300 font-semibold transition";
+    }
+
+    function handleFileSelect() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return;
+      document.getElementById("fileName").textContent = file.name;
+      document.getElementById("fileSize").textContent = (file.size / 1024).toFixed(1) + " KB";
+      document.getElementById("fileInfo").classList.remove("hidden");
+    }
+
+    const dropZone = document.getElementById("dropZone");
+    ["dragenter", "dragover"].forEach(ev => dropZone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropZone.classList.add("border-sky-400", "bg-sky-500/10");
+    }));
+    ["dragleave", "drop"].forEach(ev => dropZone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropZone.classList.remove("border-sky-400", "bg-sky-500/10");
+    }));
+    dropZone.addEventListener("drop", e => {
+      const dt = e.dataTransfer;
+      if (dt.files.length) {
+        document.getElementById("fileInput").files = dt.files;
+        handleFileSelect();
+      }
+    });
+
+    function switchTab(tab) {
+      const isSum = tab === "summary";
+      document.getElementById("panel-summary").classList.toggle("hidden", !isSum);
+      document.getElementById("panel-extracted").classList.toggle("hidden", isSum);
+      document.getElementById("tab-summary").className = isSum
+        ? "px-4 py-1.5 text-xs font-semibold rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30"
+        : "px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white";
+      document.getElementById("tab-extracted").className = !isSum
+        ? "px-4 py-1.5 text-xs font-semibold rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30"
+        : "px-4 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white";
+    }
+
+    async function uploadFile() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Pehle koi PDF, Image, ya WAV audio file select karo!");
+
+      document.getElementById("emptyState").classList.add("hidden");
+      document.getElementById("resultBox").classList.add("hidden");
+      document.getElementById("errorBox").classList.add("hidden");
+      document.getElementById("loadingState").classList.remove("hidden");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("length", selectedLength);
+
+      try {
+        const res = await fetch("/summarize", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Processing failed");
+
+        latestData = data;
+        document.getElementById("summaryText").textContent = data.summary;
+        document.getElementById("extractedText").textContent = data.extracted_text;
+        document.getElementById("statOrig").textContent = data.original_words.toLocaleString();
+        document.getElementById("statSum").textContent = data.summary_words.toLocaleString();
+        const reduced = data.original_words > 0 ? Math.max(0, Math.round((1 - data.summary_words / data.original_words) * 100)) : 0;
+        document.getElementById("statReduced").textContent = reduced + "%";
+
+        const hlList = document.getElementById("highlightsList");
+        hlList.innerHTML = "";
+        if (data.highlights && data.highlights.length) {
+          document.getElementById("highlightsSection").classList.remove("hidden");
+          data.highlights.forEach(item => {
+            const li = document.createElement("li");
+            li.className = "flex gap-2.5 items-start";
+            li.innerHTML = `<span class="text-sky-400 mt-1">•</span><span>${item}</span>`;
+            hlList.appendChild(li);
+          });
+        } else {
+          document.getElementById("highlightsSection").classList.add("hidden");
+        }
+
+        const kwBox = document.getElementById("keywordsBox");
+        kwBox.innerHTML = "";
+        (data.key_phrases || []).forEach(kw => {
+          const span = document.createElement("span");
+          span.className = "px-3 py-1 bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs rounded-full";
+          span.textContent = kw;
+          kwBox.appendChild(span);
+        });
+
+        switchTab("summary");
+        document.getElementById("resultBox").classList.remove("hidden");
+      } catch (err) {
+        const eb = document.getElementById("errorBox");
+        eb.textContent = "Error: " + err.message;
+        eb.classList.remove("hidden");
+        document.getElementById("emptyState").classList.remove("hidden");
+      } finally {
+        document.getElementById("loadingState").classList.add("hidden");
+      }
+    }
+
+    function copySummary() {
+      if (!latestData) return;
+      navigator.clipboard.writeText(latestData.summary);
+      const btn = document.getElementById("copyBtn");
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = "Copy", 1500);
+    }
+
+    function downloadSummary() {
+      if (!latestData) return;
+      const content = `FILE: ${latestData.filename}\n\n=== DETAILED SUMMARY ===\n${latestData.summary}\n\n=== KEY HIGHLIGHTS ===\n- ${(latestData.highlights || []).join("\n- ")}\n\n=== KEY TOPICS ===\n${(latestData.key_phrases || []).join(", ")}`;
+      const blob = new Blob([content], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `summary_${latestData.filename}.txt`;
+      a.click();
+    }
+  </script>
+</body>
+</html>
